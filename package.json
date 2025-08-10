@@ -1,0 +1,17 @@
+{
+  "name": "pew-pew-pizza-pirates",
+  "version": "0.1.0",
+  "description": "Ridiculous space survivor where pizza rules the galaxy.",
+  "main": "electron/main.js",
+  "author": "You",
+  "license": "MIT",
+  "scripts": {
+    "start:electron": "electron .",
+    "build:win": "electron-builder --win",
+    "build:dir": "electron-builder --dir"
+  },
+  "devDependencies": {
+    "electron": "^31.3.0",
+    "electron-builder": "^24.13.3"
+  }
+}

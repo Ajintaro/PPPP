@@ -1,0 +1,19 @@
+appId: com.pewpew.pizzapirates
+productName: Pew Pew Pizza Pirates
+files:
+  - "index.html"
+  - "src/**"
+  - "electron/**"
+  - "README.md"
+asar: true
+directories:
+  output: dist
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: "${productName}-Setup-${version}-${arch}.${ext}"
+nsis:
+  oneClick: true
+  perMachine: false
