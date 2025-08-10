@@ -1,3 +1,4 @@
+let __APP_REF;
 import { SHIPS, PARAM_KEYS } from './config.js';
 import { drawShipPreview } from './render.js';
 import { addWeapon, applyAdminConfigToDefs, WeaponDefs } from './weapons.js';
@@ -5,6 +6,7 @@ import { clamp } from './state.js';
 import { SFX } from './audio.js';
 
 export function hookUI(app){
+  __APP_REF = app;
   const qs = id => document.getElementById(id);
 
   // HUD
@@ -357,15 +359,15 @@ export function hookUI(app){
       for(let i=0;i<n;i++){
         const ang = Math.random()*Math.PI*2;
         const dist = 300 + Math.random()*200;
-        const x = Math.max(24, Math.min(app.world.w-24, app.player.x + Math.cos(ang)*dist));
-        const y = Math.max(24, Math.min(app.world.h-24, app.player.y + Math.sin(ang)*dist));
+        const x = Math.max(24, Math.min(__APP_REF.canvas.width-24, __APP_REF.player.x + Math.cos(ang)*dist));
+        const y = Math.max(24, Math.min(__APP_REF.canvas.height-24, __APP_REF.player.y + Math.sin(ang)*dist));
         let e;
         if(type==='weak'){ e = {x,y,r:16,hp:hp, maxHp:hp, speed:speed, touch:touch, type:0, t:0}; }
         else if(type==='fast'){ e = {x,y,r:12,hp:hp, maxHp:hp, speed:speed, touch:touch, type:1, t:0}; }
         else if(type==='tank'){ e = {x,y,r:20,hp:hp, maxHp:hp, speed:speed, touch:touch, type:2, t:0}; }
         else if(type==='miniboss'){ e = {x,y,r:30,hp:hp, maxHp:hp, speed:speed, touch:touch, type:2, t:0, miniboss:true, shield2:shield2, shield2Max:shield2}; }
         else { e = {x,y,r:18,hp:hp, maxHp:hp, speed:speed, touch:touch, type:0, t:0, shield2:shield2, shield2Max:shield2}; }
-        app.enemies.push(e);
+        __APP_REF.enemies.push(e);
       }
     });
     
