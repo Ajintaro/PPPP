@@ -6,6 +6,3 @@ export const SHIPS = [
   { key:'deep', name:'The Deep Dish', desc:'Sehr langsam, dicke Hülle & Schaden.', speedMul:0.80, hpMul:1.3, dmgMul:1.15, fireRateMul:0.9 }
 ];
 export const PARAM_KEYS = ['fireRate','damage','speed','life','count','spread','arc','range','radius'];
-
-// --- Feature Flags (safe defaults) ---
-export const FEATURE_FLAGS = { SPRITES_BETA: false, SIMULATION_V2: true };

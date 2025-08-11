@@ -8,10 +8,11 @@
   "scripts": {
     "start:electron": "electron .",
     "build:win": "electron-builder --win",
-    "build:dir": "electron-builder --dir"
+    "build:dir": "electron-builder --dir",
+    "start": "electron ."
   },
   "devDependencies": {
-    "electron": "^31.3.0",
+    "electron": "^31.7.7",
     "electron-builder": "^24.13.3"
   }
 }
