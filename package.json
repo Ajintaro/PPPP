@@ -1,18 +1,14 @@
 {
   "name": "pew-pew-pizza-pirates",
   "version": "0.1.0",
-  "description": "Ridiculous space survivor where pizza rules the galaxy.",
+  "type": "module",
   "main": "electron/main.js",
-  "author": "You",
-  "license": "MIT",
   "scripts": {
-    "start:electron": "electron .",
-    "build:win": "electron-builder --win",
-    "build:dir": "electron-builder --dir",
-    "start": "electron ."
+    "prestart": "node tools/write-version.mjs",
+    "start": "env -u NODE_OPTIONS electron .",
+    "start:devtools": "env -u NODE_OPTIONS ELECTRON_ENABLE_LOGGING=1 electron ."
   },
   "devDependencies": {
-    "electron": "^31.7.7",
-    "electron-builder": "^24.13.3"
+    "electron": "^31.0.0"
   }
 }

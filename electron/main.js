@@ -1,23 +1,32 @@
-// electron/main.js
-const { app, BrowserWindow, ipcMain } = require('electron');
-const path = require('path');
-let mainWindow;
+import { app, BrowserWindow } from 'electron';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-function createWindow() {
-  mainWindow = new BrowserWindow({
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+async function createWindow(){
+  const win = new BrowserWindow({
     width: 1280,
     height: 800,
-    backgroundColor: '#0b0b12',
-    show: false,
     webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js')
+      nodeIntegration: false,
+      devTools: true
     }
   });
-  mainWindow.loadFile(path.join(__dirname, '..', 'index.html'));
-  mainWindow.once('ready-to-show', () => mainWindow.show());
-  if (!app.isPackaged) mainWindow.webContents.openDevTools({ mode: 'detach' });
+  await win.loadFile('index.html');
+  // win.webContents.openDevTools({ mode: 'detach' });
 }
-app.whenReady().then(createWindow);
-app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
-ipcMain.handle('app:getVersion', () => app.getVersion());
+
+app.whenReady().then(() => {
+  createWindow();
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+});
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit();
+});

@@ -37,6 +37,18 @@
 .stats th { text-align:left; color:#e9e9f0; }
 .plusBonus{ color:#79ff9f; font-weight:600; }
 </style>
+
+<!-- patch: clean-menu+hotkeys v1 (hide admin/testing) -->
+<style>
+  #btnTesting, #btnAdmin, #btnAdminPanel,
+  .btn-testing, .btn-admin,
+  [data-role="testing"], [data-role="admin"],
+  #screenTesting, #testingOverlay, #adminPanel {
+    display: none !important;
+    visibility: hidden !important;
+  }
+</style>
+
 </head>
 <body>
   <canvas id="game"></canvas>
@@ -243,6 +255,22 @@
       <div class="muted" style="margin-top:8px;">Typen: <code>weak</code>, <code>fast</code>, <code>tank</code>, <code>miniboss</code>, <code>custom</code></div>
     </div>
   </div>
+
+
+<!-- patch: clean-menu+hotkeys v1 (disable dev keys) -->
+<script>
+(function(){
+  const BLOCK = new Set(['F1','F9','F10','F12','`','~']);
+  window.addEventListener('keydown', function(e){
+    const k = (e.key||'').toString();
+    const isDevComboT = (k.toLowerCase()==='t') && (e.ctrlKey||e.metaKey||e.altKey);
+    const isDevComboA = (k.toLowerCase()==='a') && (e.ctrlKey||e.metaKey||e.altKey);
+    if (BLOCK.has(k) || isDevComboT || isDevComboA){
+      e.preventDefault(); e.stopImmediatePropagation();
+    }
+  }, true);
+})();
+</script>
 
 </body>
 </html>

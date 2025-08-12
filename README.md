@@ -1,13 +1,10 @@
-# Pew Pew Pizza Pirates (Electron build)
+# Pew Pew Pizza Pirates — Clean Baseline
+Lauffähiges Electron + Canvas Grundgerüst mit korrekten Pfaden.
 
-## Dev
+## Start
 ```bash
-npm i
-npm run start:electron
+npm install
+npm start
 ```
-
-## Build (Windows x64)
-```bash
-npm run build:win
-```
-Output in `dist/`.
+- Generiert `src/version.js` automatisch.
+- Renderer lädt **./src/main.js** (nicht electron/main.js).
