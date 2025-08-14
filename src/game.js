@@ -18,7 +18,7 @@ export function attachInput(app){
 function spawnMiniBoss(app){
   const x = Math.max(60, Math.min(app.player.x + (Math.random()<0.5?-1:1)*520, 4140));
   const y = Math.max(60, Math.min(app.player.y + (Math.random()<0.5?-1:1)*520, 4140));
-  const e = { x, y, r:30, hp:420, maxHp:420, speed:100, touch:26, type:2, t:0, miniboss:true, shield2:260, shield2Max:260 };
+  const e = { x, y, r:30, hp:420, maxHp:420, speed:100, touch:26, type:2, t:0, miniboss:true, shield2:260, shield2Max:260, id:Date.now() + Math.random() };
   app.enemies.push(e);
   try{ SFX.boss(app);}catch{}
 }
@@ -56,14 +56,86 @@ function update(app, dt){
 
   app.ownedWeapons.forEach(w=>{ if(w && typeof w.update==='function') w.update(w, dt, app); });
 
-  for(let i=app.projectiles.length-1;i>=0;i--){ const p=app.projectiles[i]; p.x+=p.vx*dt; p.y+=p.vy*dt; p.life-=dt; if(p.x<0||p.y<0||p.x>WORLD.w||p.y>WORLD.h||p.life<=0){ app.projectiles.splice(i,1); continue; } }
+  for(let i=app.projectiles.length-1;i>=0;i--){ 
+    const p=app.projectiles[i]; 
+    
+    if(p.type === 'orbital') {
+      // Orbital movement is handled in updateOrbitals function
+      // Orbitals don't expire, they're managed by the weapon
+    } else {
+      // Regular projectile movement
+      p.x+=p.vx*dt; 
+      p.y+=p.vy*dt; 
+      p.life-=dt; 
+      if(p.x<0||p.y<0||p.x>WORLD.w||p.y>WORLD.h||p.life<=0){ 
+        app.projectiles.splice(i,1); 
+        continue; 
+      } 
+    }
+  }
 
-  const stage=getDifficultyStage(app); app._spawnAccum=(app._spawnAccum||0)+dt*(1+app.time.elapsed/150)*(1+stage*0.25); while(app._spawnAccum>1){ spawnEnemy(app); app._spawnAccum-=1; }
+  const stage=getDifficultyStage(app); 
+  if(!app.spawnPaused){
+    app._spawnAccum=(app._spawnAccum||0)+dt*(1+app.time.elapsed/150)*(1+stage*0.25); 
+    while(app._spawnAccum>1){ spawnEnemy(app); app._spawnAccum-=1; }
+  }
   if(app.time.elapsed>=app._bossNext){ const aliveBoss = app.enemies.some(e=>e.miniboss); if(!aliveBoss){ spawnMiniBoss(app); app._bossNext += 120; } }
 
   app.enemies.forEach(e=>{ e.t=(e.t||0)+dt; const dx=app.player.x-e.x, dy=app.player.y-e.y; const d=Math.hypot(dx,dy)||1; e.x+=(dx/d)*e.speed*dt; e.y+=(dy/d)*e.speed*dt; });
 
-  for(let i=app.projectiles.length-1;i>=0;i--){ const p=app.projectiles[i]; let hit=false; for(let j=app.enemies.length-1;j>=0;j--){ const e=app.enemies[j]; const dx=p.x-e.x, dy=p.y-e.y; if(dx*dx+dy*dy<(p.r+e.r)*(p.r+e.r)){ let dmg=p.damage; let shown=0; /* boss shields */ if(e.miniboss && e.shield2 && e.shield2>0){ const take=Math.min(dmg, e.shield2); e.shield2-=take; dmg-=take; shown+=take; } if(dmg>0){ e.hp-=dmg; shown+=dmg; } app.stats.damageDealt += shown; hit=true; app.dmgTexts.push({x:e.x, y:e.y - e.r, val: Math.round(shown), t:0}); if((e.hp>0)||(e.shield2&&e.shield2>0)){ e.hitFlash=0.08; } p._pen = (p._pen ?? (app.meta.pen||0)); if(p._pen>0){ p._pen--; continue; } else { app.projectiles.splice(i,1); i--; } break; } } if(p.type==='gauss' && hit){ /* gauss obeys same pen already handled */ } }
+  for(let i=app.projectiles.length-1;i>=0;i--){ 
+    const p=app.projectiles[i]; 
+    let hit=false; 
+    for(let j=app.enemies.length-1;j>=0;j--){ 
+      const e=app.enemies[j]; 
+      const dx=p.x-e.x, dy=p.y-e.y; 
+      if(dx*dx+dy*dy<(p.r+e.r)*(p.r+e.r)){ 
+        // Check if we already hit this enemy this frame (prevent double hits)
+        if(e.id === p.lastHitId) continue;
+        
+        let dmg=p.damage; 
+        let shown=0; 
+        /* boss shields */ 
+        if(e.miniboss && e.shield2 && e.shield2>0){ 
+          const take=Math.min(dmg, e.shield2); 
+          e.shield2-=take; 
+          dmg-=take; 
+          shown+=take; 
+        } 
+        if(dmg>0){ 
+          e.hp-=dmg; 
+          shown+=dmg; 
+        } 
+        app.stats.damageDealt += shown; 
+        hit=true; 
+        app.dmgTexts.push({x:e.x, y:e.y - e.r, val: Math.round(shown), t:0}); 
+        if((e.hp>0)||(e.shield2&&e.shield2>0)){ 
+          e.hitFlash=0.08; 
+        } 
+        
+        // Pierce system: only for projectile weapons
+        if(p.type === 'blaster' || p.type === 'gauss') {
+          p.pierceRem = (p.pierceRem ?? 0) - 1;
+          p.lastHitId = e.id;
+          
+          if(p.pierceRem < 0) {
+            app.projectiles.splice(i,1); 
+            i--; 
+            break;
+          }
+        } else if(p.type === 'orbital') {
+          // Orbital weapons don't pierce but don't get destroyed on hit
+          p.lastHitId = e.id;
+          // Continue checking other enemies
+        } else {
+          // Non-piercing weapons (beam) destroy on first hit
+          app.projectiles.splice(i,1); 
+          i--; 
+          break;
+        }
+      } 
+    } 
+  }
 
   for(let j=app.enemies.length-1;j>=0;j--){ const e=app.enemies[j]; if(e.hp<=0){ const isBoss=!!e.miniboss; app.enemies.splice(j,1); dropAfterKill(app,e.x,e.y,e.type, isBoss); } }
 

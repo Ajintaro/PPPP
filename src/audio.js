@@ -17,6 +17,8 @@ export const SFX = {
   blaster: (app)=> beep(app,{freq:980,type:'triangle',gain:0.05,attack:0.001,decay:0.05}),
   beam:    (app)=> { if(!app.audioCtx) return; const t=app.audioCtx.currentTime; const o=app.audioCtx.createOscillator(); const g=app.audioCtx.createGain(); o.type='sawtooth'; o.connect(g); g.connect(app.audioCtx.destination); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.06*app.sfxVolume,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+0.12); o.frequency.setValueAtTime(260,t); o.frequency.exponentialRampToValueAtTime(1800,t+0.09); o.start(t); o.stop(t+0.14); },
   gauss:   (app)=> beep(app,{freq:220,type:'square',gain:0.08,attack:0.004,decay:0.2}),
+  orbital: (app)=> beep(app,{freq:440,type:'triangle',gain:0.06,attack:0.002,decay:0.15}),
+  forcefield: (app)=> beep(app,{freq:320,type:'sine',gain:0.04,attack:0.01,decay:0.3}),
   hit:     (app)=> beep(app,{freq:140,type:'square',gain:0.08,attack:0.002,decay:0.12}),
   exp:     (app)=> beep(app,{freq:1200,type:'sine',gain:0.03,attack:0.001,decay:0.05}),
   gold:    (app)=> beep(app,{freq:1000,type:'triangle',gain:0.05,attack:0.001,decay:0.09}),

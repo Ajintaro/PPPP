@@ -1,0 +1,95 @@
+{
+  "projectiles": {
+    "pepperoni": { 
+      "sprite": "sprites/projectiles/pepperoni.png", 
+      "radius": 4,
+      "color": "#ff4444"
+    },
+    "olive": { 
+      "sprite": "sprites/projectiles/olive.png", 
+      "radius": 8,
+      "color": "#44ff44"
+    },
+    "salami": { 
+      "sprite": "sprites/projectiles/salami.png", 
+      "radius": 6,
+      "color": "#ff8844"
+    }
+  },
+  "weapons": {
+    "blaster": { 
+      "sfx": "audio/sfx/pepperoni_shoot.mp3",
+      "projectileType": "pepperoni"
+    },
+    "gauss": { 
+      "sfx": "audio/sfx/gauss_shoot.mp3",
+      "projectileType": "olive"
+    },
+    "orbital": { 
+      "sfx": "audio/sfx/orbital_spawn.mp3",
+      "projectileType": "salami"
+    },
+    "arcbeam": { 
+      "sfx": "audio/sfx/beam_zap.mp3"
+    }
+  },
+  "ships": {
+    "balanced": { 
+      "sprite": "sprites/ships/balanced.png",
+      "color": "#4488ff"
+    },
+    "swift": { 
+      "sprite": "sprites/ships/swift.png",
+      "color": "#44ff88"
+    },
+    "brute": { 
+      "sprite": "sprites/ships/brute.png",
+      "color": "#ff4488"
+    }
+  },
+  "enemies": {
+    "weak": { 
+      "sprite": "sprites/enemies/weak.png",
+      "color": "#ff6666"
+    },
+    "fast": { 
+      "sprite": "sprites/enemies/fast.png",
+      "color": "#66ff66"
+    },
+    "tank": { 
+      "sprite": "sprites/enemies/tank.png",
+      "color": "#6666ff"
+    },
+    "miniboss": { 
+      "sprite": "sprites/enemies/miniboss.png",
+      "color": "#ffff66"
+    }
+  },
+  "ui": {
+    "button": "ui/button.png",
+    "panel": "ui/panel.png",
+    "icon_pepperoni": "ui/icon_pepperoni.png",
+    "icon_olive": "ui/icon_olive.png",
+    "icon_salami": "ui/icon_salami.png",
+    "icon_cheese": "ui/icon_cheese.png"
+  },
+  "audio": {
+    "music": {
+      "main_theme": "audio/music/main_theme.mp3",
+      "battle": "audio/music/battle.mp3"
+    },
+    "sfx": {
+      "shoot": "audio/sfx/shoot.mp3",
+      "hit": "audio/sfx/hit.mp3",
+      "exp": "audio/sfx/exp.mp3",
+      "gold": "audio/sfx/gold.mp3",
+      "food": "audio/sfx/food.mp3",
+      "level_up": "audio/sfx/level_up.mp3",
+      "cash": "audio/sfx/cash.mp3",
+      "denied": "audio/sfx/denied.mp3",
+      "boss_warning": "audio/sfx/boss_warning.mp3",
+      "win": "audio/sfx/win.mp3",
+      "lose": "audio/sfx/lose.mp3"
+    }
+  }
+}

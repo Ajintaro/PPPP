@@ -9,7 +9,7 @@ export function spawnEnemy(app){
   const dist=rand(420,760), ang=rand(0,Math.PI*2);
   const x= clamp(app.player.x + Math.cos(ang)*dist, 32, WORLD.w-32);
   const y= clamp(app.player.y + Math.sin(ang)*dist, 32, WORLD.h-32);
-  let e; if(type===0){ e={x,y,r:16,hp:18,speed:130,touch:5,type:0,t:0}; } else if(type===1){ e={x,y,r:12,hp:12,speed:210,touch:4,type:1,t:0}; } else { e={x,y,r:20,hp:42,speed:90,touch:12,type:2,t:0}; }
+  let e; if(type===0){ e={x,y,r:16,hp:18,speed:130,touch:5,type:0,t:0,id:Date.now() + Math.random()}; } else if(type===1){ e={x,y,r:12,hp:12,speed:210,touch:4,type:1,t:0,id:Date.now() + Math.random()}; } else { e={x,y,r:20,hp:42,speed:90,touch:12,type:2,t:0,id:Date.now() + Math.random()}; }
   const stageHp=Math.pow(1.18,stage), stageSpd=Math.pow(1.06,stage);
   e.maxHp=Math.round(e.hp*stageHp); e.hp=e.maxHp; e.speed=Math.round(e.speed*stageSpd); e.touch=Math.round(e.touch*Math.pow(1.18,stage));
   if(app.time.elapsed<=30){ e.hp = e.maxHp = 8; }

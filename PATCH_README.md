@@ -1,39 +1,49 @@
-# PPPP – Prozess-Geländer Patch
+# Pew Pew Pizza Pirates - Balancing Patch
 
-Dieser Patch fügt **Feature Flags**, **Build-Info** und **PR/Changelog-Struktur** hinzu, damit zukünftige Änderungen nicht versehentlich alte Fixes überschreiben.
+## Salami Orbit Balancing Fix
 
-## Inhalt
-- `apply-patch.ps1` (Windows)
-- `apply-patch.sh` (macOS/Linux)
-- `PATCH_MANIFEST.json`
-- `.github/pull_request_template.md`
-- `CHANGELOG.md` (wird angelegt/ergänzt)
-- erzeugt: `src/version.extra.js`
-- modifiziert (idempotent): `src/config.js` (fügt `FEATURE_FLAGS` hinzu, falls nicht vorhanden)
+### Problem
+Das Salami Orbit-System spawnte bei jedem Cooldown neue Orbitale, was zu einer unkontrollierten Anzahl von rotierenden Salamis führte.
 
-## Anwendung
-**Windows PowerShell:**
-```powershell
-cd <Dein/Projekt/PPPP>
-# ZIP entpacken, dann:
-./apply-patch.ps1
-```
+### Lösung
+- **Feste Anzahl**: Nur 1 Salami wird initial gespawnt
+- **Level-Up Upgrades**: Weitere Salamis nur durch "+1 Orbit" Upgrades (max. 6)
+- **Kontinuierliche Rotation**: Orbitale rotieren kontinuierlich um den Spieler
+- **Keine Lebensdauer**: Orbitale werden nicht durch Zeit zerstört, sondern durch die Waffe verwaltet
 
-**macOS/Linux (zsh/bash):**
-```bash
-cd <Dein/Projekt/PPPP>
-# ZIP entpacken, dann:
-chmod +x ./apply-patch.sh
-./apply-patch.sh
-```
+### Technische Änderungen
 
-## Ergebnis
-- `src/config.js` enthält:
-  ```js
-  export const FEATURE_FLAGS = { SPRITES_BETA: false, SIMULATION_V2: true };
-  ```
-- `src/version.extra.js` enthält Build-Infos (ID + Timestamp).
-- `.github/pull_request_template.md` vorhanden.
-- `CHANGELOG.md` ergänzt.
+#### weapons.js
+- Neue Funktionen: `spawnOrbitalSet()`, `updateOrbitals()`, `removeWeaponOrbitals()`
+- Orbital-Waffen haben jetzt `orbitalsInitialized` Flag
+- Orbitale werden mit `weaponKey` getrackt
+- Upgrade "+1 Orbit" setzt `orbitalsInitialized = false` für Neuspawn
 
-> Der Patch ist **idempotent**: Mehrfaches Ausführen fügt nichts doppelt ein.
+#### game.js
+- Entfernung der doppelten Orbital-Bewegungsberechnung
+- Orbitale werden nicht mehr durch Lebensdauer zerstört
+- Kollisionserkennung für Orbitale (kein Pierce, aber auch keine Zerstörung)
+
+#### ui.js
+- Spezielle Behandlung für Orbital-Upgrades im Level-Up-System
+
+### Balancing-Werte
+- **Start**: 1 Salami
+- **Max**: 6 Salamis durch Upgrades
+- **Rotation**: 2.0 rad/s
+- **Radius**: 80 (upgradebar)
+- **Schaden**: 8 (upgradebar)
+
+### Testen
+1. Starte das Spiel
+2. Wähle Salami Orbit als Waffe
+3. Überprüfe: Nur 1 Salami rotiert
+4. Level-Up: Wähle "+1 Orbit" Upgrade
+5. Überprüfe: 2 Salamis rotieren
+6. Wiederhole bis max. 6 Salamis
+
+### Nächste Schritte
+- [ ] HUD mit Waffen-Panel implementieren
+- [ ] Level-Up-Dialog mit klickbaren Karten
+- [ ] Pause-Menü (ESC)
+- [ ] Assets (Sprites, SFX, Musik)

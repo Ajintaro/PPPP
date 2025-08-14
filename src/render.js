@@ -5,6 +5,7 @@ export function draw(app){
   drawDrops(app);
   drawEnemies(app);
   drawProjectiles(app);
+  drawForceField(app);
   drawShip(app);
   drawDamageTexts(app);
 }
@@ -43,11 +44,18 @@ export function drawProjectiles(app){
   const { ctx, camera, projectiles } = app;
   ctx.save(); ctx.translate(-camera.x, -camera.y);
   projectiles.forEach(p=>{
-    if(p.type==='blaster'){ const ang=Math.atan2(p.vy,p.vx); const sc=(p.visScale||1); drawPepper(ctx,p.x,p.y,ang,1.1*sc); } else if(p.type==='gauss'){
+    if(p.type==='blaster'){ 
+      const ang=Math.atan2(p.vy,p.vx); 
+      const sc=(p.visScale||1); 
+      drawPepper(ctx,p.x,p.y,ang,1.1*sc); 
+    } else if(p.type==='gauss'){
       const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*2);
       g.addColorStop(0,'rgba(120,255,160,1)'); g.addColorStop(1,'rgba(120,255,160,0)');
       ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,p.r*2,0,Math.PI*2); ctx.fill();
       ctx.fillStyle='#b7ffd1'; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+    } else if(p.type==='orbital'){
+      // Draw salami orbital projectile
+      drawSalami(ctx,p.x,p.y,p.angle,1.0);
     }
   });
   ctx.restore();
@@ -132,6 +140,21 @@ function drawPepper(ctx, x, y, ang, s){
   ctx.restore();
 }
 
+function drawSalami(ctx, x, y, ang, s){
+  ctx.save();
+  ctx.translate(x,y); ctx.rotate(ang); ctx.scale(s,s);
+  // shadow
+  ctx.globalAlpha=0.25; ctx.fillStyle='#000'; ctx.beginPath(); ctx.ellipse(2,3,6,2,0,0,Math.PI*2); ctx.fill();
+  ctx.globalAlpha=1;
+  // body - salami slice
+  ctx.fillStyle='#ff8844'; ctx.strokeStyle='#cc6633'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.arc(0,0,6,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  // fat marbling
+  ctx.fillStyle='#ffaa66'; ctx.beginPath(); ctx.arc(0,0,4,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#ff8844'; ctx.beginPath(); ctx.arc(0,0,2,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
 export function drawDamageTexts(app){
   const { ctx, camera } = app;
   ctx.save(); ctx.translate(-camera.x, -camera.y);
@@ -141,4 +164,85 @@ export function drawDamageTexts(app){
     ctx.fillText(String(d.val), d.x, d.y);
   });
   ctx.restore();
+}
+
+export function drawForceField(app){
+  // Draw persistent aura if force field weapon is active
+  if(app.forceFieldAura && app.forceFieldAura.active) {
+    const { ctx, camera, forceFieldAura } = app;
+    
+    ctx.save();
+    ctx.translate(forceFieldAura.x - camera.x, forceFieldAura.y - camera.y);
+    
+    // Subtle persistent aura
+    ctx.globalAlpha = 0.15;
+    const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, forceFieldAura.radius);
+    gradient.addColorStop(0, 'rgba(0, 255, 100, 0.3)');
+    gradient.addColorStop(0.7, 'rgba(0, 255, 100, 0.1)');
+    gradient.addColorStop(1, 'rgba(0, 255, 100, 0)');
+    
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(0, 0, forceFieldAura.radius, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Subtle border
+    ctx.globalAlpha = 0.2;
+    ctx.strokeStyle = '#00ff64';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(0, 0, forceFieldAura.radius, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    ctx.restore();
+  }
+  
+  // Draw pulse effect
+  if(!app.forceFieldPulse) return;
+  
+  const { ctx, camera, forceFieldPulse } = app;
+  const pulse = forceFieldPulse;
+  
+  ctx.save();
+  ctx.translate(pulse.x - camera.x, pulse.y - camera.y);
+  
+  // Draw force field aura with better visibility
+  const alpha = Math.max(0, pulse.life / (pulse.maxLife || 0.3));
+  ctx.globalAlpha = alpha * 0.5; // Increased alpha for better visibility
+  
+  // Outer glow - more intense
+  const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, pulse.radius);
+  gradient.addColorStop(0, 'rgba(0, 255, 100, 1.0)'); // Brighter center
+  gradient.addColorStop(0.5, 'rgba(0, 255, 100, 0.6)'); // More visible middle
+  gradient.addColorStop(0.8, 'rgba(0, 255, 100, 0.3)'); // Visible edge
+  gradient.addColorStop(1, 'rgba(0, 255, 100, 0)');
+  
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(0, 0, pulse.radius, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Inner ring - more visible
+  ctx.globalAlpha = alpha * 0.8;
+  ctx.strokeStyle = '#00ff64';
+  ctx.lineWidth = 4; // Thicker line
+  ctx.beginPath();
+  ctx.arc(0, 0, pulse.radius * 0.7, 0, Math.PI * 2);
+  ctx.stroke();
+  
+  // Additional inner glow
+  ctx.globalAlpha = alpha * 0.4;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, 0, pulse.radius * 0.5, 0, Math.PI * 2);
+  ctx.stroke();
+  
+  ctx.restore();
+  
+  // Update pulse life
+  pulse.life -= 0.016; // ~60fps
+  if(pulse.life <= 0){
+    app.forceFieldPulse = null;
+  }
 }

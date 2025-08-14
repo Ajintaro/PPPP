@@ -17,7 +17,7 @@ export function hookUI(app){
   const heroSelect=qs('heroselect'), heroCards=qs('heroCards'), cancelHero=qs('cancelHero');
   const shop=qs('shop'), buyHp=qs('buyHp'), buySpd=qs('buySpd'), buyDmg=qs('buyDmg'), closeShop=qs('closeShop'), costHp=qs('costHp'), costSpd=qs('costSpd'), costDmg=qs('costDmg');
   const settings=qs('settings'), closeSettings=qs('closeSettings'), volume=qs('volume'), volLabel=qs('volLabel');
-  const admin=qs('admin'), adminWeapons=qs('adminWeapons'), applyNowCb=qs('applyNow'), saveAdminBtn=qs('saveAdmin'), resetAdminBtn=qs('resetAdmin'), closeAdminBtn=qs('closeAdmin'); const testing=qs('testing'), testEnemyType=qs('testEnemyType'), testCount=qs('testCount'), testSpeed=qs('testSpeed'), testHp=qs('testHp'), testTouch=qs('testTouch'), testShield2=qs('testShield2'), btnSpawn=qs('btnSpawn'), closeTesting=qs('closeTesting');
+
 
   const levelUpOverlay=qs('levelup'), choicesEl=qs('choices'), levelUpTitle=qs('levelupTitle'), skipBtn=qs('skip');
   const gameOverOverlay=qs('gameover'), gameOverTitle=qs('gameoverTitle'), summaryEl=qs('summary'), restartBtn=qs('restart'), backToMenuBtn=qs('backToMenu');
@@ -81,8 +81,14 @@ export function hookUI(app){
     app.player.dmgMul=app.chosenShip.dmgMul * (1 + app.meta.dmg*0.02);
 
     app.ownedWeapons.length=0; addWeapon(app,'blaster');
+    // Debug: Add force field for testing
+    addWeapon(app,'forcefield');
+    
+    // Clean up force field effects
+    app.forceFieldPulse = null;
+    app.forceFieldAura = null;
 
-    hide(mainMenu); hide(heroSelect); hide(shop); hide(settings); levelUpOverlay.style.display='none'; hide(admin); hide(gameOverOverlay); hide(pauseOverlay);
+         hide(mainMenu); hide(heroSelect); hide(shop); hide(settings); levelUpOverlay.style.display='none'; hide(gameOverOverlay); hide(pauseOverlay);
     updateHUD(); refreshShop();
   }
   app.newRun=newRun;
@@ -91,13 +97,13 @@ export function hookUI(app){
   btnStart.addEventListener('click', ()=>{ app.state='hero'; buildHeroCards(); show(heroSelect); hide(mainMenu); });
   btnShop.addEventListener('click', ()=>{ app.state='menu'; refreshShop(); show(shop); hide(mainMenu); });
   btnSettings.addEventListener('click', ()=>{ app.state='menu'; show(settings); hide(mainMenu); });
-  btnAdmin.addEventListener('click', ()=>{ app.state='menu'; buildAdminUI(); show(admin); hide(mainMenu); });
-    btnTesting.addEventListener('click', ()=>{ app.state='menu'; show(testing); hide(mainMenu); });
+  if(qs('btnQuit')) qs('btnQuit').addEventListener('click', ()=>{ window.close(); });
+
   closeShop.addEventListener('click', ()=>{ hide(shop); show(mainMenu); });
   closeSettings.addEventListener('click', ()=>{ hide(settings); show(mainMenu); });
-  closeAdminBtn.addEventListener('click', ()=>{ hide(admin); show(mainMenu); });
 
-  if(restartBtn) restartBtn.addEventListener('click', ()=>{ newRun(); });
+
+  if(restartBtn) restartBtn.addEventListener('click', ()=>{ hide(gameOverOverlay); newRun(); });
   if(backToMenuBtn) backToMenuBtn.addEventListener('click', ()=>{ hide(gameOverOverlay); show(mainMenu); app.state='menu'; });
 
   function buildHeroCards(){
@@ -183,12 +189,12 @@ export function hookUI(app){
 
   function weaponUpgradeChoices(){
     const choices=[];
-    // random new weapon until 3
-    if(app.ownedWeapons.length<3){
+    // random new weapon until 5 (increased from 3)
+    if(app.ownedWeapons.length<5){
       const avail=Object.keys(WeaponDefs).filter(k=> !app.ownedWeapons.find(w=>w.key===k));
       if(avail.length){ const pick=avail[Math.floor(Math.random()*avail.length)]; choices.push({kind:'newWeapon', key:pick, label:`Neue Waffe: ${WeaponDefs[pick].name}`}); }
     }
-    // upgrades for owned
+    // per-weapon upgrades for owned weapons
     app.ownedWeapons.forEach(w=>{
       const pool=w.upgradePool && w.upgradePool.filter(u=>!u.cond || u.cond(w));
       if(pool && pool.length){
@@ -196,11 +202,13 @@ export function hookUI(app){
         choices.push({kind:'upgradeWeapon', target:w.key, label:`${w.name}: ${u.name}`, apply:()=>u.apply(w)});
       }
     });
-    // per-weapon penetration (cap 3)
+    // per-weapon penetration (only for projectile weapons, cap 3)
     app.ownedWeapons.forEach(w=>{
-      w.penBonus = w.penBonus||0;
-      if(w.penBonus<3){
-        choices.push({kind:'upgradeWeapon', target:w.key, label:`Durchschlag (+1) – ${w.name}`, apply:()=>{ w.penBonus++; }});
+      if(w.key === 'blaster' || w.key === 'gauss') { // Only projectile weapons can pierce
+        w.pierce = w.pierce || 0;
+        if(w.pierce < 3){
+          choices.push({kind:'upgradeWeapon', target:w.key, label:`${w.name}: +1 Durchschlag`, apply:()=>{ w.pierce++; }});
+        }
       }
     });
     // run speed boost
@@ -218,7 +226,19 @@ export function hookUI(app){
       const b=document.createElement('button'); b.className='choice'; b.innerHTML=`<b>${opt.label}</b>`;
       b.addEventListener('click', ()=>{
         if(opt.kind==='newWeapon'){ addWeapon(app,opt.key); }
-        else if(opt.kind==='upgradeWeapon'){ opt.apply(); const w=app.ownedWeapons.find(x=>x.key===opt.target); if(w){ w.level=(w.level||1)+1; } }
+        else if(opt.kind==='upgradeWeapon'){ 
+          opt.apply(); 
+          const w=app.ownedWeapons.find(x=>x.key===opt.target); 
+          if(w){ 
+            w.level=(w.level||1)+1; 
+            // Special handling for orbital weapon upgrades
+            if(w.key === 'orbital' && w.count > 1) {
+              // Re-spawn orbital set with new count
+              // This will be handled in the weapon's update function
+              w.orbitalsInitialized = false;
+            }
+          } 
+        }
         else { opt.apply(); }
         levelUpOverlay.style.display='none'; app.time.paused=false; app.state='playing';
       });
@@ -228,29 +248,7 @@ export function hookUI(app){
   app.showLevelUp=showLevelUp;
   app.ui = { show, hide, mainMenu, levelUpTitle, showLevelUp };
 
-  // Admin
-  function buildAdminUI(){
-    adminWeapons.innerHTML='';
-    Object.keys(WeaponDefs).forEach(key=>{
-      const def=WeaponDefs[key]; const card=document.createElement('div'); card.className='card';
-      const title = `<div class="h2">${def.name}</div>`;
-      const fields = PARAM_KEYS.map(p=>{ const val = typeof def[p]==='number'? def[p] : ''; return `<label class="muted" style="display:block;margin:6px 0;">${p}: <input data-weap="${key}" data-prop="${p}" type="number" step="0.01" value="${val}" style="width:120px;"/></label>`; }).join('');
-      card.innerHTML=title+fields; adminWeapons.appendChild(card);
-    });
-  }
-  resetAdminBtn.addEventListener('click', ()=>{
-    Object.keys(app.factoryWeaponSnapshot||{}).forEach(k=>{ Object.keys(app.factoryWeaponSnapshot[k]).forEach(p=>{ WeaponDefs[k][p]=app.factoryWeaponSnapshot[k][p]; }); });
-    buildAdminUI();
-  });
-  saveAdminBtn.addEventListener('click', ()=>{
-    const cfg={}; adminWeapons.querySelectorAll('input[data-weap][data-prop]').forEach(inp=>{ const w=inp.getAttribute('data-weap'); const p=inp.getAttribute('data-prop'); const v=parseFloat(inp.value); if(!cfg[w]) cfg[w]={}; if(!isNaN(v)) cfg[w][p]=v; });
-    applyAdminConfigToDefs(cfg);
-    if(applyNowCb.checked){
-      app.ownedWeapons.forEach(w=>{ const def=WeaponDefs[w.key]; if(!def) return; PARAM_KEYS.forEach(p=>{ if(typeof def[p]==='number') w[p]=def[p]; }); });
-    }
-    buildAdminUI();
-  });
-  app.buildAdminUI=buildAdminUI;
+
 
   // Pause controls
   window.addEventListener('keydown', (e)=>{
@@ -348,26 +346,5 @@ export function hookUI(app){
   refreshShop();
 }
 
-    if(closeTesting) closeTesting.addEventListener('click', ()=>{ hide(testing); show(mainMenu); });
-    if(btnSpawn) btnSpawn.addEventListener('click', ()=>{
-      const type = testEnemyType.value;
-      const n = Math.max(1, Math.min(300, parseInt(testCount.value||'1')));
-      const speed = parseFloat(testSpeed.value||'120');
-      const hp = parseFloat(testHp.value||'20');
-      const touch = parseFloat(testTouch.value||'6');
-      const shield2 = parseFloat(testShield2.value||'0');
-      for(let i=0;i<n;i++){
-        const ang = Math.random()*Math.PI*2;
-        const dist = 300 + Math.random()*200;
-        const x = Math.max(24, Math.min(__APP_REF.canvas.width-24, __APP_REF.player.x + Math.cos(ang)*dist));
-        const y = Math.max(24, Math.min(__APP_REF.canvas.height-24, __APP_REF.player.y + Math.sin(ang)*dist));
-        let e;
-        if(type==='weak'){ e = {x,y,r:16,hp:hp, maxHp:hp, speed:speed, touch:touch, type:0, t:0}; }
-        else if(type==='fast'){ e = {x,y,r:12,hp:hp, maxHp:hp, speed:speed, touch:touch, type:1, t:0}; }
-        else if(type==='tank'){ e = {x,y,r:20,hp:hp, maxHp:hp, speed:speed, touch:touch, type:2, t:0}; }
-        else if(type==='miniboss'){ e = {x,y,r:30,hp:hp, maxHp:hp, speed:speed, touch:touch, type:2, t:0, miniboss:true, shield2:shield2, shield2Max:shield2}; }
-        else { e = {x,y,r:18,hp:hp, maxHp:hp, speed:speed, touch:touch, type:0, t:0, shield2:shield2, shield2Max:shield2}; }
-        __APP_REF.enemies.push(e);
-      }
-    });
+    
     
